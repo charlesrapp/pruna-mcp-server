@@ -1,6 +1,5 @@
 # 🎨 Pruna AI — Kiro Power
 
-<img src="icon.jpg" width="120" alt="Pruna AI Power icon" />
 
 Generate images, edit photos, upscale, and create videos directly in your Kiro workflow using [Pruna AI](https://pruna.ai).
 
