@@ -1,10 +1,28 @@
 # 🎨 Pruna AI — Kiro Power
 
+<img src="icon.jpg" width="120" alt="Pruna AI Power icon" />
+
 Generate images, edit photos, upscale, and create videos directly in your Kiro workflow using [Pruna AI](https://pruna.ai).
 
-[![Install in Kiro](https://img.shields.io/badge/Install_in_Kiro-Open_Power_Config-blue?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMyAzTDQgMTRoN2wtMSA3IDktMTFoLTdsMS03eiIvPjwvc3ZnPg==)](https://github.com/charlesrapp/pruna-mcp-server/tree/main/power-pruna)
+[![Install in Kiro](https://img.shields.io/badge/Kiro-Install_Power-7c3aed?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik0xMyAzTDQgMTRoN2wtMSA3IDktMTFoLTdsMS03eiIvPjwvc3ZnPg==)](kiro://powers/install?url=https://github.com/charlesrapp/pruna-mcp-server/tree/main/power-pruna)
 
-> **To install:** In Kiro IDE → Powers panel → "Add power from GitHub" → paste `https://github.com/charlesrapp/pruna-mcp-server/tree/main/power-pruna`
+## MCP Configuration
+
+[**▶ Open power config**](kiro://powers/install?url=https://github.com/charlesrapp/pruna-mcp-server/tree/main/power-pruna)
+
+```json
+{
+  "mcpServers": {
+    "pruna": {
+      "command": "uvx",
+      "args": ["pruna-mcp-server"],
+      "env": {
+        "PRUNA_API_KEY": "${PRUNA_API_KEY}"
+      }
+    }
+  }
+}
+```
 
 ## What it does
 
