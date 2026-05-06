@@ -1,0 +1,13 @@
+{
+    [1m"mcpServers"[0m: {
+        [1m"pruna"[0m: {
+            [1m"command"[0m: [32m"uvx"[0m,
+            [1m"args"[0m: [
+                [32m"pruna-mcp-server"[0m
+            ],
+            [1m"env"[0m: {
+                [1m"PRUNA_API_KEY"[0m: [32m"${PRUNA_API_KEY}"[0m
+            }
+        }
+    }
+}
