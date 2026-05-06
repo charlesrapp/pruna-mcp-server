@@ -1,0 +1,29 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.charlesrapp/pruna",
+  "description": "MCP server for Pruna AI — ultra-fast image generation, editing, upscaling, and video generation directly from your AI assistant.",
+  "repository": {
+    "url": "https://github.com/charlesrapp/pruna-mcp-server",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "pruna-mcp-server",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PRUNA_API_KEY",
+          "description": "Your Pruna AI API key (get one at https://pruna.ai)",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

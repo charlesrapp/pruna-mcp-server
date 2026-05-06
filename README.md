@@ -165,3 +165,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+<!-- mcp-name: io.github.charlesrapp/pruna -->
