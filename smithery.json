@@ -1,0 +1,25 @@
+{
+    [1m"name"[0m: [32m"pruna-mcp-server"[0m,
+    [1m"description"[0m: [32m"MCP server for Pruna AI \u2014 ultra-fast image generation, editing, upscaling, and video generation"[0m,
+    [1m"vendor"[0m: [32m"Charles Rapp"[0m,
+    [1m"sourceUrl"[0m: [32m"https://github.com/charlesrapp/pruna-mcp-server"[0m,
+    [1m"homepage"[0m: [32m"https://github.com/charlesrapp/pruna-mcp-server"[0m,
+    [1m"license"[0m: [32m"MIT"[0m,
+    [1m"runtime"[0m: [32m"python"[0m,
+    [1m"mcpVersion"[0m: [32m"2025-11-25"[0m,
+    [1m"transport"[0m: [32m"stdio"[0m,
+    [1m"installCommand"[0m: [32m"uvx pruna-mcp-server"[0m,
+    [1m"configSchema"[0m: {
+        [1m"type"[0m: [32m"object"[0m,
+        [1m"properties"[0m: {
+            [1m"PRUNA_API_KEY"[0m: {
+                [1m"type"[0m: [32m"string"[0m,
+                [1m"description"[0m: [32m"Your Pruna AI API key (get one at https://pruna.ai)"[0m,
+                [1m"x-from"[0m: [32m"env"[0m
+            }
+        },
+        [1m"required"[0m: [
+            [32m"PRUNA_API_KEY"[0m
+        ]
+    }
+}
