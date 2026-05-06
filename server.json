@@ -1,29 +1,29 @@
 {
-    [1m"$schema"[0m: [32m"https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json"[0m,
-    [1m"name"[0m: [32m"io.github.charlesrapp/pruna"[0m,
-    [1m"description"[0m: [32m"MCP server for Pruna AI \u2014 ultra-fast image generation, editing, upscaling, and video generation directly from your AI assistant."[0m,
-    [1m"repository"[0m: {
-        [1m"url"[0m: [32m"https://github.com/charlesrapp/pruna-mcp-server"[0m,
-        [1m"source"[0m: [32m"github"[0m
-    },
-    [1m"version"[0m: [32m"0.1.1"[0m,
-    [1m"packages"[0m: [
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.charlesrapp/pruna",
+  "description": "Ultra-fast image generation, editing, upscaling, and video generation via Pruna AI.",
+  "repository": {
+    "url": "https://github.com/charlesrapp/pruna-mcp-server",
+    "source": "github"
+  },
+  "version": "0.1.1",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "pruna-mcp-server",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
         {
-            [1m"registryType"[0m: [32m"pypi"[0m,
-            [1m"identifier"[0m: [32m"pruna-mcp-server"[0m,
-            [1m"version"[0m: [32m"0.1.1"[0m,
-            [1m"transport"[0m: {
-                [1m"type"[0m: [32m"stdio"[0m
-            },
-            [1m"environmentVariables"[0m: [
-                {
-                    [1m"name"[0m: [32m"PRUNA_API_KEY"[0m,
-                    [1m"description"[0m: [32m"Your Pruna AI API key (get one at https://pruna.ai)"[0m,
-                    [1m"isRequired"[0m: [1;34mtrue[0m,
-                    [1m"format"[0m: [32m"string"[0m,
-                    [1m"isSecret"[0m: [1;34mtrue[0m
-                }
-            ]
+          "name": "PRUNA_API_KEY",
+          "description": "Your Pruna AI API key (get one at https://pruna.ai)",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
         }
-    ]
+      ]
+    }
+  ]
 }
