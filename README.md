@@ -5,7 +5,9 @@
 [![Python](https://img.shields.io/pypi/pyversions/pruna-mcp-server)](https://pypi.org/project/pruna-mcp-server/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-MCP server for [Pruna AI](https://pruna.ai) — ultra-fast image generation, editing, upscaling, and video generation.
+MCP server for [Pruna AI](https://pruna.ai) — ultra-fast image generation, editing, upscaling, and video generation directly from your AI assistant.
+
+[Pruna AI](https://pruna.ai) is an inference API specialized in image and video generation. It offers sub-2-second image generation starting at $0.005/image, with models for text-to-image, image editing, upscaling, and video generation. This MCP server wraps their API so any MCP-compatible client (Claude Desktop, Kiro, Cursor) can generate visual content natively.
 
 Conforms to [MCP Specification 2025-11-25](https://modelcontextprotocol.io/specification/2025-11-25).
 
@@ -31,7 +33,7 @@ pip install pruna-mcp-server
 pruna-mcp
 ```
 
-Set your API key — get one from [pruna.ai](https://pruna.ai):
+Set your API key — get one at [pruna.ai](https://pruna.ai) (go to the [developer portal](https://docs.api.pruna.ai/) or [contact Pruna](https://pruna.ai/contact) to request access):
 
 ```bash
 # macOS Keychain (recommended)
