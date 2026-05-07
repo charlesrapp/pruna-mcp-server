@@ -39,7 +39,13 @@ Set your API key — get one at [pruna.ai](https://pruna.ai) (go to the [develop
 # macOS Keychain (recommended)
 security add-generic-password -a $USER -s PRUNA_API_KEY -w "your-api-key"
 
-# Or environment variable
+# Linux (GNOME Keyring)
+secret-tool store --label="Pruna API Key" service pruna-mcp-server key api_key <<< "your-api-key"
+
+# Windows (PowerShell)
+[System.Environment]::SetEnvironmentVariable("PRUNA_API_KEY", "your-api-key", "User")
+
+# Or environment variable (all platforms)
 export PRUNA_API_KEY="your-api-key"
 ```
 
