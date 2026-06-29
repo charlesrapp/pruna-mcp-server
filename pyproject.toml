@@ -1,6 +1,6 @@
 [project]
 name = "pruna-mcp-server"
-version = "0.1.1"
+version = "0.2.0"
 description = "MCP server for Pruna AI — Image generation, editing, upscaling, and video generation"
 readme = "README.md"
 requires-python = ">=3.10"

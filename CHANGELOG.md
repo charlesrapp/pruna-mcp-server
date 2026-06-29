@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-29
+
 ### Added
 - `try_on_image` tool — virtual try-on backed by the `p-image-try-on` model
 - `p-image-try-on` model in the registry under a new `try-on` category (filterable via `list_models`)
@@ -16,6 +18,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 - `try_on_image` now fits up to 11 garments (was 4); pricing documented as $0.015 first + $0.008 per extra garment
 - `upscale_image` now supports up to 128 MP (was 8 MP)
+
+### Fixed
+- `try_on_image`: poll the prediction handle returned by the try-on endpoint. The sync request returns a poll handle rather than an inline result, so the tool now polls to completion instead of failing with "no generation URL" (found via live API smoke test)
+
+### Security
+- Sanitize the API-provided prediction id before using it in output filenames (path-traversal hardening)
+- Wrap output downloads to return a clean error instead of a raw exception on missing or invalid delivery URLs
+
+## [0.1.1] - 2026-05-06
+
+### Changed
+- Version bump for MCP Registry verification (no functional changes)
 
 ## [0.1.0] - 2026-04-13
 
