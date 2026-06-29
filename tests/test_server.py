@@ -595,6 +595,25 @@ class TestPredictWithFallback:
         mock.predict_sync.assert_not_called()
         mock.predict_async.assert_called_once()
 
+    async def test_sync_handle_triggers_polling(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Sync returning a poll handle (no generation_url) should poll, not resubmit."""
+        mock = _mock_client(tmp_path)
+        mock.predict_sync.return_value = {"id": "handle-123"}  # no generation_url
+        mock.poll_status.return_value = {
+            "status": "succeeded",
+            "generation_url": "/v1/predictions/delivery/x/h123/output.jpg",
+        }
+        monkeypatch.setenv("PRUNA_API_KEY", "test")
+        with patch("pruna_mcp_server.server._get_client", return_value=mock), \
+             patch("pruna_mcp_server.server._get_config") as mock_cfg:
+            from pruna_mcp_server.config import PrunaConfig
+            mock_cfg.return_value = PrunaConfig(api_key="test", output_dir=tmp_path, poll_interval=0.005)
+            result = _parse(await try_on_image("https://example.com/p.jpg", ["https://example.com/g.jpg"]))
+        assert "file_path" in result
+        mock.predict_sync.assert_called_once()
+        mock.poll_status.assert_called()
+        mock.predict_async.assert_not_called()  # must NOT resubmit
+
     async def test_sync_timeout_falls_back_to_async(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Sync 408 should fall back to async polling."""
         from pruna_mcp_server.client import PrunaAPIError

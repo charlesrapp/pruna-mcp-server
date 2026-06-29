@@ -114,18 +114,25 @@ async def _predict_with_fallback(
 ) -> dict[str, Any]:
     """Try sync prediction, fall back to async polling on timeout.
 
-    Models that don't support sync go directly to async polling.
+    Models that don't support sync go directly to async polling. Some models
+    (e.g. p-image-try-on) accept the sync header but still return a poll handle
+    instead of an inline result; in that case we poll the returned id.
     """
     model_info = get_model(model)
     if model_info and not model_info.supports_sync:
         return await _predict_async_poll(client, model, input_data)
     try:
-        return await client.predict_sync(model, input_data)
+        result = await client.predict_sync(model, input_data)
     except PrunaAPIError as e:
         if e.status_code == 408 or "timeout" in str(e).lower():
             logger.warning("Sync timeout for %s, falling back to async", model)
             return await _predict_async_poll(client, model, input_data)
         raise
+    # Sync may return a poll handle (no inline result) — poll it to completion.
+    if not result.get("generation_url") and result.get("id"):
+        logger.info("Sync returned a poll handle for %s, polling to completion", model)
+        return await _poll_prediction(client, result["id"])
+    return result
 
 
 async def _predict_async_poll(
@@ -135,29 +142,37 @@ async def _predict_async_poll(
     """Submit async prediction and poll until complete, with optional progress."""
     async with _prediction_semaphore:
         pred = await client.predict_async(model, input_data)
-        prediction_id = pred["id"]
-        config = _get_config()
-        start = time.time()
-        progress_map = {"starting": 10, "processing": 50}
+        return await _poll_prediction(client, pred["id"], ctx)
 
-        while (time.time() - start) < _POLL_TIMEOUT:
-            status_data = await client.poll_status(prediction_id)
-            status = status_data.get("status", "")
 
-            if status == "succeeded":
-                if ctx:
-                    await ctx.report_progress(100, 100)
-                return status_data
-            if status == "failed":
-                raise PrunaAPIError(
-                    500,
-                    status_data.get("error", status_data.get("message", "unknown error")),
-                )
+async def _poll_prediction(
+    client: PrunaClient,
+    prediction_id: str,
+    ctx: Context | None = None,  # type: ignore[type-arg]
+) -> dict[str, Any]:
+    """Poll a prediction id until it completes, with optional progress."""
+    config = _get_config()
+    start = time.time()
+    progress_map = {"starting": 10, "processing": 50}
+
+    while (time.time() - start) < _POLL_TIMEOUT:
+        status_data = await client.poll_status(prediction_id)
+        status = status_data.get("status", "")
+
+        if status == "succeeded":
             if ctx:
-                await ctx.report_progress(progress_map.get(status, 30), 100)
-            await asyncio.sleep(config.poll_interval)
+                await ctx.report_progress(100, 100)
+            return status_data
+        if status == "failed":
+            raise PrunaAPIError(
+                500,
+                status_data.get("error", status_data.get("message", "unknown error")),
+            )
+        if ctx:
+            await ctx.report_progress(progress_map.get(status, 30), 100)
+        await asyncio.sleep(config.poll_interval)
 
-        raise PrunaAPIError(408, f"Prediction timed out after {_POLL_TIMEOUT}s")
+    raise PrunaAPIError(408, f"Prediction timed out after {_POLL_TIMEOUT}s")
 
 
 @mcp.resource("pruna://models")
