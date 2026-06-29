@@ -13,10 +13,10 @@ Conforms to [MCP Specification 2025-11-25](https://modelcontextprotocol.io/speci
 
 ## Features
 
-- **6 MCP Tools**: `generate_image`, `edit_image`, `upscale_image`, `generate_video`, `list_models`, `upload_file`
+- **8 MCP Tools**: `generate_image`, `edit_image`, `try_on_image`, `upscale_image`, `generate_video`, `transform_video`, `list_models`, `upload_file`
 - **7 MCP Prompts**: Product photos, virtual staging, social media visuals, game concept art, ad creatives, video ads, image enhancement
 - **2 MCP Resources**: `pruna://models` catalog for model discovery without tool calls
-- **18 models**: 10 text-to-image, 3 editing, 1 upscale, 4 video
+- **21 models**: 10 text-to-image, 3 editing, 1 virtual try-on, 1 upscale, 4 video, 2 video-to-video
 - **Smart sync/async**: Sync for fast image models, async with polling for video
 - **Transparent file handling**: Pass local paths or URLs — auto-upload handled
 - **Native MCP image return**: `ImageContent` blocks for clients that support inline display
@@ -60,13 +60,13 @@ In `mcpServers`:
 "pruna": {
   "command": "sh",
   "args": ["-c", "PRUNA_API_KEY=$(security find-generic-password -a $USER -s PRUNA_API_KEY -w) uv run --directory /path/to/pruna-mcp-server pruna-mcp"],
-  "autoApprove": ["generate_image", "edit_image", "upscale_image", "generate_video", "list_models", "upload_file"]
+  "autoApprove": ["generate_image", "edit_image", "try_on_image", "upscale_image", "generate_video", "transform_video", "list_models", "upload_file"]
 }
 ```
 
 In `tools`, add: `"@pruna/*"`
 
-In `allowedTools`, add: `"generate_image", "edit_image", "upscale_image", "generate_video", "list_models", "upload_file"`
+In `allowedTools`, add: `"generate_image", "edit_image", "try_on_image", "upscale_image", "generate_video", "transform_video", "list_models", "upload_file"`
 
 > **Note**: Kiro agents use a `tools` whitelist with `@server-name/*` syntax and an `allowedTools` list. Both must include the Pruna tools for them to be available.
 
@@ -111,8 +111,10 @@ Add to `.cursor/mcp.json`:
 |------|-------------|---------|
 | `generate_image` | Text-to-image with 10 models | From $0.0001/image |
 | `edit_image` | Edit 1-5 images with text instructions | From $0.010/image |
-| `upscale_image` | AI upscaling to 1-8 megapixels | From $0.005/image |
+| `try_on_image` | Virtual try-on: fit up to 11 garments onto a person | $0.015 first + $0.008/extra garment |
+| `upscale_image` | AI upscaling up to 128 megapixels | From $0.005/image |
 | `generate_video` | Text/image/audio to video | From $0.005/s |
+| `transform_video` | Video-to-video: animate a subject or replace characters | $0.03/s (720p), $0.06/s (1080p) |
 | `list_models` | Browse all available models with pricing | Free |
 | `upload_file` | Upload files for editing/video workflows | Free |
 
@@ -158,7 +160,7 @@ git clone https://github.com/charlesrapp/pruna-mcp-server.git
 cd pruna-mcp-server
 uv sync --extra dev
 
-# Run tests (100 tests, 94% coverage)
+# Run tests (147 tests, 97% coverage)
 uv run pytest --cov
 
 # Lint & type check

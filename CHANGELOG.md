@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+- `try_on_image` tool — virtual try-on backed by the `p-image-try-on` model
+- `p-image-try-on` model in the registry under a new `try-on` category (filterable via `list_models`)
+- `transform_video` tool — video-to-video transform backed by `p-video-animate` (restyle a subject with the motion of a source video) and `p-video-replace` (swap the character(s) in a source video using 1-3 identity references)
+- `p-video-animate` and `p-video-replace` models in the registry under a new `video-edit` category (filterable via `list_models`)
+- `prompt`, `turbo`, and `reference_pose` parameters for `try_on_image` (experimental guidance, turbo mode, optional reposing)
+
+### Changed
+- `try_on_image` now fits up to 11 garments (was 4); pricing documented as $0.015 first + $0.008 per extra garment
+- `upscale_image` now supports up to 128 MP (was 8 MP)
+
 ## [0.1.0] - 2026-04-13
 
 ### Added

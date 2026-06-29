@@ -9,13 +9,15 @@ from pruna_mcp_server.models import get_all_models, get_model, validate_model
 
 class TestModelRegistry:
     def test_total_model_count(self) -> None:
-        assert len(get_all_models()) == 18
+        assert len(get_all_models()) == 21
 
     def test_category_counts(self) -> None:
         assert len(get_all_models("text-to-image")) == 10
         assert len(get_all_models("editing")) == 3
+        assert len(get_all_models("try-on")) == 1
         assert len(get_all_models("upscale")) == 1
         assert len(get_all_models("video")) == 4
+        assert len(get_all_models("video-edit")) == 2
 
     def test_get_model_exists(self) -> None:
         model = get_model("p-image")
@@ -29,6 +31,10 @@ class TestModelRegistry:
 
     def test_video_models_no_sync(self) -> None:
         for m in get_all_models("video"):
+            assert m.supports_sync is False
+
+    def test_video_edit_models_no_sync(self) -> None:
+        for m in get_all_models("video-edit"):
             assert m.supports_sync is False
 
     def test_validate_model_ok(self) -> None:

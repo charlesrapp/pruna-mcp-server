@@ -71,6 +71,18 @@ def _image_result(out_path: Path, metadata: dict[str, Any]) -> list[TextContent 
     return result
 
 
+async def _resolve_image_url(client: PrunaClient, img: str) -> str:
+    """Resolve an image argument to a Pruna-usable URL, uploading local files.
+
+    Raises ValueError for disallowed http:// URLs.
+    """
+    if img.startswith(("https://", "/v1/")):
+        return img
+    if img.startswith("http://"):
+        raise ValueError("http:// URLs are not allowed — use https://")
+    upload_result = await client.upload_file(Path(img))
+    return upload_result["urls"]["get"]  # type: ignore[no-any-return]
+
 
 async def _predict_with_fallback(
     client: PrunaClient, model: str, input_data: dict[str, Any]
@@ -178,19 +190,21 @@ def list_models(category: str | None = None) -> str:
     """List available Pruna AI models with capabilities and pricing.
 
     Args:
-        category: Filter by category: image, editing, upscale, video
+        category: Filter by category: image, editing, try-on, upscale, video, video-edit
     """
     category_map: dict[str, str] = {
         "image": "text-to-image",
         "editing": "editing",
+        "try-on": "try-on",
         "upscale": "upscale",
         "video": "video",
+        "video-edit": "video-edit",
     }
     internal_cat = None
     if category:
         if category not in category_map:
             return _error_result(
-                f"Invalid category '{category}'. Must be one of: image, editing, upscale, video"
+                f"Invalid category '{category}'. Must be one of: image, editing, try-on, upscale, video, video-edit"
             )
         internal_cat = category_map[category]
 
@@ -371,6 +385,110 @@ async def edit_image(
 
 @mcp.tool(
     annotations=ToolAnnotations(
+        title="Virtual Try-On (Pruna AI)",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def try_on_image(
+    person_image: str,
+    garment_images: list[str],
+    model: str = "p-image-try-on",
+    prompt: str = "",
+    turbo: bool = False,
+    reference_pose: str | None = None,
+    seed: int | None = None,
+    output_format: str = "jpg",
+    output_quality: int = 95,
+    preserve_input_size: bool = True,
+) -> Any:
+    """Virtually fit one or more garments onto a person's photo using Pruna AI.
+
+    Args:
+        person_image: Image URL or local file path of the person
+        garment_images: 1-11 garment reference images (URLs or local file paths).
+            Up to 6 recommended for best quality.
+        model: Model to use (default: p-image-try-on)
+        prompt: Experimental guidance for non-flatlay garment images
+            (e.g. which garment from which image to use)
+        turbo: Faster generation. Not recommended for more than 4 garments
+        reference_pose: Experimental. Image URL/path to repose the person before try-on
+        seed: Random seed for reproducible generation
+        output_format: Output format (webp, jpg, png)
+        output_quality: Quality for jpg/webp outputs (0-100)
+        preserve_input_size: Resize the result back to the person image size
+    """
+    try:
+        validate_model(model, "try-on")
+    except ValueError as e:
+        return _error_result(str(e))
+    if not garment_images or len(garment_images) > 11:
+        return _error_result("garment_images must contain 1-11 items")
+    if output_format not in {"webp", "jpg", "png"}:
+        return _error_result("output_format must be webp, jpg, or png")
+    if not (0 <= output_quality <= 100):
+        return _error_result("output_quality must be 0-100")
+    if seed is not None and seed < 0:
+        return _error_result("seed must be non-negative")
+
+    client = _get_client()
+
+    try:
+        person_url = await _resolve_image_url(client, person_image)
+        garment_urls = [await _resolve_image_url(client, g) for g in garment_images]
+        pose_url = (
+            await _resolve_image_url(client, reference_pose) if reference_pose else None
+        )
+    except ValueError as e:
+        return _error_result(str(e))
+
+    input_data: dict[str, Any] = {
+        "person_image": person_url,
+        "garment_images": garment_urls,
+        "turbo": turbo,
+        "output_format": output_format,
+        "output_quality": output_quality,
+        "preserve_input_size": preserve_input_size,
+    }
+    if prompt:
+        input_data["prompt"] = prompt
+    if pose_url is not None:
+        input_data["reference_pose"] = pose_url
+    if seed is not None:
+        input_data["seed"] = seed
+
+    logger.info(
+        "try_on_image: model=%s, garments=%d, turbo=%s",
+        model,
+        len(garment_images),
+        turbo,
+    )
+    start = time.time()
+    result = await _predict_with_fallback(client, model, input_data)
+    elapsed_ms = int((time.time() - start) * 1000)
+
+    gen_url = result.get("generation_url", "")
+    pred_id = secrets.token_urlsafe(6)
+    out_path = _output_path(model, pred_id, output_format)
+    await client.download(gen_url, out_path)
+
+    metadata: dict[str, Any] = {
+        "file_path": str(out_path),
+        "model": model,
+        "garments": len(garment_images),
+        "turbo": turbo,
+        "output_format": output_format,
+        "generation_time_ms": elapsed_ms,
+    }
+    if seed is not None:
+        metadata["seed"] = seed
+    return _image_result(out_path, metadata)
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
         title="Image Upscaling (Pruna AI)",
         readOnlyHint=False,
         destructiveHint=False,
@@ -389,13 +507,13 @@ async def upscale_image(
 
     Args:
         image: Image URL or local file path to upscale
-        target: Target resolution in megapixels (1-8)
+        target: Target resolution in megapixels (1-128, capped at 128 MP)
         output_format: Output format (webp, jpg, png)
         enhance_details: Enhance fine textures
         enhance_realism: Improve realism (recommended for AI-generated images)
     """
-    if not (1 <= target <= 8):
-        return _error_result("target must be 1-8 megapixels")
+    if not (1 <= target <= 128):
+        return _error_result("target must be 1-128 megapixels")
     if output_format not in {"webp", "jpg", "png"}:
         return _error_result("output_format must be webp, jpg, or png")
 
@@ -572,6 +690,121 @@ async def generate_video(
         "generation_time_ms": elapsed_ms,
     }
     logger.info("generate_video completed: %s, %ds, %dms", model, duration, elapsed_ms)
+    return json.dumps(response, indent=2)
+
+
+@mcp.tool(
+    annotations=ToolAnnotations(
+        title="Video-to-Video Transform (Pruna AI)",
+        readOnlyHint=False,
+        destructiveHint=False,
+        idempotentHint=False,
+        openWorldHint=True,
+    ),
+)
+async def transform_video(
+    video: str,
+    references: list[str],
+    model: str = "p-video-animate",
+    resolution: str = "720p",
+    target_fps: str = "original",
+    instruction_prompt: str = "",
+    turbo: bool = False,
+    save_audio: bool = True,
+    ignore_audio: bool = False,
+    seed: int | None = None,
+) -> str:
+    """Transform a source video using reference images (video-to-video).
+
+    Two models are available:
+    - p-video-animate: animate a single subject reference image using the motion
+      from the source video (provide exactly 1 reference).
+    - p-video-replace: replace the character(s) in the source video using 1-3
+      identity reference images.
+
+    Motion, timing, camera movement, and scene structure are preserved.
+
+    Args:
+        video: Source video URL or local file path (.mp4)
+        references: Reference images (URLs or local file paths).
+            Exactly 1 for p-video-animate, 1-3 for p-video-replace.
+        model: Model to use (p-video-animate or p-video-replace)
+        resolution: Output resolution (720p or 1080p)
+        target_fps: Working FPS (original, 24, or 48)
+        instruction_prompt: Optional guidance on how to apply the transform
+        turbo: Faster generation for slightly lower quality
+        save_audio: Save the output video with audio
+        ignore_audio: Ignore source audio during generation
+        seed: Random seed for reproducible generation
+    """
+    try:
+        validate_model(model, "video-edit")
+    except ValueError as e:
+        return _error_result(str(e))
+    if not references:
+        return _error_result("references must contain at least 1 image")
+    if model == "p-video-animate" and len(references) != 1:
+        return _error_result("p-video-animate requires exactly 1 reference image")
+    if model == "p-video-replace" and len(references) > 3:
+        return _error_result("p-video-replace supports 1-3 reference images")
+    if resolution not in {"720p", "1080p"}:
+        return _error_result("resolution must be 720p or 1080p")
+    if target_fps not in {"original", "24", "48"}:
+        return _error_result("target_fps must be original, 24, or 48")
+    if seed is not None and seed < 0:
+        return _error_result("seed must be non-negative")
+
+    client = _get_client()
+
+    try:
+        video_url = await _resolve_image_url(client, video)
+        reference_urls = [await _resolve_image_url(client, r) for r in references]
+    except ValueError as e:
+        return _error_result(str(e))
+
+    input_data: dict[str, Any] = {
+        "video": video_url,
+        "resolution": resolution,
+        "target_fps": target_fps,
+        "turbo": turbo,
+        "save_audio": save_audio,
+        "ignore_audio": ignore_audio,
+    }
+    if model == "p-video-animate":
+        input_data["image"] = reference_urls[0]
+    else:
+        input_data["images"] = reference_urls
+    if instruction_prompt:
+        input_data["instruction_prompt"] = instruction_prompt
+    if seed is not None:
+        input_data["seed"] = seed
+
+    logger.info(
+        "transform_video: model=%s, references=%d, resolution=%s",
+        model,
+        len(references),
+        resolution,
+    )
+    start = time.time()
+    try:
+        status_data = await _predict_async_poll(client, model, input_data)
+    except PrunaAPIError as e:
+        return _error_result(f"Video transform failed: {e}")
+    elapsed_ms = int((time.time() - start) * 1000)
+
+    gen_url = status_data.get("generation_url", "")
+    pred_id = status_data.get("id", "unknown")[:8]
+    out_path = _output_path(model, pred_id, "mp4")
+    await client.download(gen_url, out_path)
+
+    response: dict[str, Any] = {
+        "file_path": str(out_path),
+        "model": model,
+        "references": len(references),
+        "resolution": resolution,
+        "generation_time_ms": elapsed_ms,
+    }
+    logger.info("transform_video completed: %s, %dms", model, elapsed_ms)
     return json.dumps(response, indent=2)
 
 

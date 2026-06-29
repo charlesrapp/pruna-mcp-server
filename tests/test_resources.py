@@ -10,7 +10,7 @@ from pruna_mcp_server.server import resource_model_detail, resource_models
 class TestResourceModels:
     def test_returns_all_models(self) -> None:
         data = json.loads(resource_models())
-        assert len(data["models"]) == 18
+        assert len(data["models"]) == 21
 
     def test_model_has_fields(self) -> None:
         data = json.loads(resource_models())

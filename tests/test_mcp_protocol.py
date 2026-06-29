@@ -14,12 +14,12 @@ from pruna_mcp_server.server import mcp
 class TestMCPToolsRegistration:
     def test_all_tools_registered(self) -> None:
         tools = mcp._tool_manager._tools  # type: ignore[attr-defined]
-        expected = {"list_models", "generate_image", "edit_image", "upscale_image", "generate_video", "upload_file"}
+        expected = {"list_models", "generate_image", "edit_image", "try_on_image", "upscale_image", "generate_video", "transform_video", "upload_file"}
         assert expected.issubset(set(tools.keys())), f"Missing tools: {expected - set(tools.keys())}"
 
     def test_tool_count(self) -> None:
         tools = mcp._tool_manager._tools  # type: ignore[attr-defined]
-        assert len(tools) >= 6
+        assert len(tools) >= 8
 
     def test_generate_image_has_annotations(self) -> None:
         tool = mcp._tool_manager._tools["generate_image"]  # type: ignore[attr-defined]
@@ -35,7 +35,7 @@ class TestMCPToolsRegistration:
 
     def test_all_tools_have_annotations(self) -> None:
         tools = mcp._tool_manager._tools  # type: ignore[attr-defined]
-        for name in ("list_models", "generate_image", "edit_image", "upscale_image", "generate_video", "upload_file"):
+        for name in ("list_models", "generate_image", "edit_image", "try_on_image", "upscale_image", "generate_video", "upload_file"):
             assert tools[name].annotations is not None, f"{name} missing annotations"
             assert tools[name].annotations.title, f"{name} missing title"
 
@@ -47,7 +47,7 @@ class TestMCPResourcesRegistration:
 
         data = json.loads(resource_models())
         assert "models" in data
-        assert len(data["models"]) == 18
+        assert len(data["models"]) == 21
 
     def test_model_detail_resource(self) -> None:
         from pruna_mcp_server.server import resource_model_detail

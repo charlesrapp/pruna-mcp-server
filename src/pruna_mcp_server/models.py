@@ -34,13 +34,18 @@ _MODELS: list[ModelInfo] = [
     ModelInfo("p-image-edit", "editing", "Premium image editing with fine control", "$0.010/image", "500/min", True, ["prompt", "images", "aspect_ratio", "seed"]),
     ModelInfo("p-image-edit-lora", "editing", "p-image-edit with custom LoRA support", "$0.010/image", "500/min", True, ["prompt", "images", "aspect_ratio", "seed", "lora_weights"]),
     ModelInfo("qwen-image-edit-plus", "editing", "Advanced image editing and manipulation", "$0.03/image", "150/min", True, ["prompt", "images", "aspect_ratio", "seed"]),
+    # Virtual Try-On (1)
+    ModelInfo("p-image-try-on", "try-on", "Virtual try-on: fit up to 11 garments onto a person's photo", "$0.015 first + $0.008 per extra garment", "500/min", True, ["person_image", "garment_images", "prompt", "turbo", "reference_pose", "seed", "output_format", "output_quality", "preserve_input_size"]),
     # Image Upscaling (1)
-    ModelInfo("p-image-upscale", "upscale", "AI-powered image upscaling with detail enhancement", "$0.005-0.01/image", "500/min", True, ["image", "target", "output_format", "enhance_details", "enhance_realism"]),
+    ModelInfo("p-image-upscale", "upscale", "AI-powered image upscaling with detail enhancement, up to 128 MP", "$0.005-0.01/image", "500/min", True, ["image", "target", "output_format", "enhance_details", "enhance_realism"]),
     # Video Generation (4)
     ModelInfo("p-video", "video", "Premium high-quality video generation", "$0.02-0.04/s", "250/min", False, ["prompt", "image", "audio", "duration", "resolution", "aspect_ratio", "fps", "seed"]),
     ModelInfo("wan-t2v", "video", "Generate videos from text descriptions", "variable", "30/min", False, ["prompt", "duration", "resolution", "aspect_ratio", "seed"]),
     ModelInfo("wan-i2v", "video", "Transform static images into dynamic videos", "variable", "30/min", False, ["prompt", "image", "duration", "resolution", "seed"]),
     ModelInfo("vace", "video", "AI-powered video generation with character consistency", "variable", "30/min", False, ["prompt", "image", "duration", "resolution", "seed"]),
+    # Video-to-Video Editing (2)
+    ModelInfo("p-video-animate", "video-edit", "Animate a subject reference image using the motion from a source video", "$0.03/s (720p), $0.06/s (1080p)", "50/min", False, ["video", "image", "turbo", "resolution", "target_fps", "instruction_prompt", "save_audio", "ignore_audio", "seed"]),
+    ModelInfo("p-video-replace", "video-edit", "Replace the character(s) in a source video using 1-3 identity reference images", "$0.03/s (720p), $0.06/s (1080p)", "50/min", False, ["video", "images", "turbo", "resolution", "target_fps", "instruction_prompt", "save_audio", "ignore_audio", "seed"]),
 ]
 
 _MODEL_INDEX: dict[str, ModelInfo] = {m.name: m for m in _MODELS}
