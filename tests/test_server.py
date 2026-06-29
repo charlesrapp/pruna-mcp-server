@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from pruna_mcp_server.server import (
+    _safe_pred_id,
     edit_image,
     generate_image,
     generate_video,
@@ -18,6 +19,34 @@ from pruna_mcp_server.server import (
     upload_file,
     upscale_image,
 )
+
+
+class TestSecurityHardening:
+    def test_safe_pred_id_strips_traversal(self) -> None:
+        assert _safe_pred_id("../../etc") == "etc"
+        assert _safe_pred_id("a/b/c") == "abc"
+        assert _safe_pred_id("abc..def") == "abcdef"
+
+    def test_safe_pred_id_keeps_safe_chars(self) -> None:
+        assert _safe_pred_id("ab_cd-12xyz") == "ab_cd-12"  # truncated to 8
+
+    def test_safe_pred_id_empty_falls_back(self) -> None:
+        out = _safe_pred_id("///")
+        assert out
+        assert "/" not in out
+
+    async def test_transform_video_missing_generation_url(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        mock = AsyncMock()
+        mock.predict_async.return_value = {"id": "vid-1"}
+        mock.poll_status.return_value = {"status": "succeeded"}  # no generation_url
+        monkeypatch.setenv("PRUNA_API_KEY", "test")
+        with patch("pruna_mcp_server.server._get_client", return_value=mock), \
+             patch("pruna_mcp_server.server._get_config") as mock_cfg:
+            from pruna_mcp_server.config import PrunaConfig
+            mock_cfg.return_value = PrunaConfig(api_key="test", output_dir=tmp_path, poll_interval=0.01)
+            result = json.loads(await transform_video("https://example.com/v.mp4", ["https://example.com/i.png"]))
+        assert "error" in result
+        mock.download.assert_not_called()
 
 
 def _parse(result: list | str) -> dict:  # type: ignore[type-arg]

@@ -56,6 +56,31 @@ def _output_path(model: str, prediction_id: str, ext: str) -> Path:
     return config.output_dir / f"{ts}_{model}_{prediction_id}.{ext}"
 
 
+def _safe_pred_id(raw: str, length: int = 8) -> str:
+    """Sanitize an API-provided id for safe use in a filename.
+
+    Keeps only alphanumerics, '-' and '_' to prevent path traversal via the
+    prediction id returned by the API. Falls back to a random token if empty.
+    """
+    cleaned = "".join(c for c in raw if c.isalnum() or c in "-_")[:length]
+    return cleaned or secrets.token_urlsafe(6)
+
+
+async def _fetch_output(client: PrunaClient, gen_url: str, out_path: Path) -> Path:
+    """Download generated content, raising PrunaAPIError on missing/invalid URL.
+
+    Converts the ValueError raised by URL validation into a handled
+    PrunaAPIError so callers can return a clean error instead of leaking a
+    raw traceback.
+    """
+    if not gen_url:
+        raise PrunaAPIError(502, "Pruna API returned no generation URL")
+    try:
+        return await client.download(gen_url, out_path)
+    except ValueError as e:
+        raise PrunaAPIError(502, f"Invalid delivery URL: {e}") from e
+
+
 def _image_result(out_path: Path, metadata: dict[str, Any]) -> list[TextContent | ImageContent]:
     """Build a tool result with JSON metadata + inline image if small enough."""
     import base64
@@ -295,7 +320,10 @@ async def generate_image(
     gen_url = result.get("generation_url", "")
     pred_id = secrets.token_urlsafe(6)
     out_path = _output_path(model, pred_id, "jpg")
-    await client.download(gen_url, out_path)
+    try:
+        await _fetch_output(client, gen_url, out_path)
+    except PrunaAPIError as e:
+        return _error_result(str(e))
 
     metadata: dict[str, Any] = {
         "file_path": str(out_path),
@@ -372,7 +400,10 @@ async def edit_image(
     gen_url = result.get("generation_url", "")
     pred_id = secrets.token_urlsafe(6)
     out_path = _output_path(model, pred_id, "jpg")
-    await client.download(gen_url, out_path)
+    try:
+        await _fetch_output(client, gen_url, out_path)
+    except PrunaAPIError as e:
+        return _error_result(str(e))
 
     metadata: dict[str, Any] = {
         "file_path": str(out_path),
@@ -472,7 +503,10 @@ async def try_on_image(
     gen_url = result.get("generation_url", "")
     pred_id = secrets.token_urlsafe(6)
     out_path = _output_path(model, pred_id, output_format)
-    await client.download(gen_url, out_path)
+    try:
+        await _fetch_output(client, gen_url, out_path)
+    except PrunaAPIError as e:
+        return _error_result(str(e))
 
     metadata: dict[str, Any] = {
         "file_path": str(out_path),
@@ -543,7 +577,10 @@ async def upscale_image(
     gen_url = result.get("generation_url", "")
     pred_id = secrets.token_urlsafe(6)
     out_path = _output_path("p-image-upscale", pred_id, output_format)
-    await client.download(gen_url, out_path)
+    try:
+        await _fetch_output(client, gen_url, out_path)
+    except PrunaAPIError as e:
+        return _error_result(str(e))
 
     metadata: dict[str, Any] = {
         "file_path": str(out_path),
@@ -678,9 +715,12 @@ async def generate_video(
     elapsed_ms = int((time.time() - start) * 1000)
 
     gen_url = status_data.get("generation_url", "")
-    pred_id = status_data.get("id", "unknown")[:8]
+    pred_id = _safe_pred_id(status_data.get("id", ""))
     out_path = _output_path(model, pred_id, "mp4")
-    await client.download(gen_url, out_path)
+    try:
+        await _fetch_output(client, gen_url, out_path)
+    except PrunaAPIError as e:
+        return _error_result(str(e))
 
     response: dict[str, Any] = {
         "file_path": str(out_path),
@@ -793,9 +833,12 @@ async def transform_video(
     elapsed_ms = int((time.time() - start) * 1000)
 
     gen_url = status_data.get("generation_url", "")
-    pred_id = status_data.get("id", "unknown")[:8]
+    pred_id = _safe_pred_id(status_data.get("id", ""))
     out_path = _output_path(model, pred_id, "mp4")
-    await client.download(gen_url, out_path)
+    try:
+        await _fetch_output(client, gen_url, out_path)
+    except PrunaAPIError as e:
+        return _error_result(str(e))
 
     response: dict[str, Any] = {
         "file_path": str(out_path),
